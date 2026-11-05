@@ -330,6 +330,7 @@
     </div>
   </div>
   <div class="brow"><button class="btn" onclick="doInteg()">Integrate</button></div>
+  <canvas id="intCanvas" width="860" height="260" hidden style="margin-top:18px;border:1px solid var(--bdr);border-radius:9px;width:100%;background:var(--surf);display:block"></canvas>
   <div id="intResult" class="rpanel" hidden>
     <div class="rhead">Integration Result</div>
     <div class="rbody" id="intResultBody"></div>
@@ -786,10 +787,122 @@ function doInteg() {
     body.innerHTML = '<div style="color:var(--fgm);font-size:12px;margin-bottom:8px">∫<sub>' + esc(loStr) + '</sub><sup>' + esc(hiStr) + '</sup> ' + esc(expr) + ' d' + esc(variable) + '</div>'
       + '<div class="rval">' + esc(fmtNum(result)) + '</div>'
       + steps([['Method',"Adaptive Simpson's rule",false],['Interval','[' + lo + ', ' + hi + ']',false],['Result',fmtNum(result),true]]);
+    drawIntegralGraph(expr, variable, lo, hi);
   } catch(e) { showErr(body, e.message); }
 }
 
 document.getElementById('iExpr').addEventListener('keydown', function(e) { if (e.key === 'Enter') doInteg(); });
+
+function drawIntegralGraph(expr, variable, lo, hi) {
+  var canvas = document.getElementById('intCanvas');
+  canvas.hidden = false;
+  var W = canvas.width, H = canvas.height;
+  var ctx = canvas.getContext('2d');
+  var isDark = document.documentElement.dataset.theme === 'dark' ||
+    (document.documentElement.dataset.theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  var bgCol   = isDark ? '#161b22' : '#ffffff';
+  var gridCol = isDark ? '#21262d' : '#e8edf2';
+  var axCol   = isDark ? '#8b949e' : '#57606a';
+  var lineCol = isDark ? '#388bfd' : '#0969da';
+  var fillCol = isDark ? 'rgba(56,139,253,0.18)' : 'rgba(9,105,218,0.12)';
+  var textCol = isDark ? '#8b949e' : '#57606a';
+
+  var pad = { l:52, r:20, t:18, b:36 };
+  var pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+
+  // Sample function over extended range
+  var span = hi - lo;
+  var xMin = lo - span * 0.25, xMax = hi + span * 0.25;
+  if (Math.abs(span) < 1e-10) { xMin = lo - 1; xMax = hi + 1; }
+  var N = 400;
+  var ys = [];
+  for (var i = 0; i <= N; i++) {
+    var x = xMin + (xMax - xMin) * i / N;
+    try { var s = {}; s[variable] = x; var r = math.evaluate(expr, s); ys.push(typeof r === 'number' && isFinite(r) ? r : null); }
+    catch(e) { ys.push(null); }
+  }
+  var validYs = ys.filter(function(v) { return v !== null; });
+  if (!validYs.length) return;
+  var yMin = Math.min.apply(null, validYs), yMax = Math.max.apply(null, validYs);
+  var yPad = (yMax - yMin) * 0.15 || 0.5;
+  yMin -= yPad; yMax += yPad;
+
+  var toCanvasX = function(x) { return pad.l + (x - xMin) / (xMax - xMin) * pw; };
+  var toCanvasY = function(y) { return pad.t + (1 - (y - yMin) / (yMax - yMin)) * ph; };
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = bgCol;
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = gridCol; ctx.lineWidth = 1;
+  var nGridX = 6, nGridY = 5;
+  for (var gi = 0; gi <= nGridX; gi++) {
+    var gx = pad.l + gi * pw / nGridX;
+    ctx.beginPath(); ctx.moveTo(gx, pad.t); ctx.lineTo(gx, pad.t + ph); ctx.stroke();
+  }
+  for (var gj = 0; gj <= nGridY; gj++) {
+    var gy = pad.t + gj * ph / nGridY;
+    ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(pad.l + pw, gy); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = axCol; ctx.lineWidth = 1;
+  var yZero = toCanvasY(0);
+  if (yZero >= pad.t && yZero <= pad.t + ph) {
+    ctx.beginPath(); ctx.moveTo(pad.l, yZero); ctx.lineTo(pad.l + pw, yZero); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, pad.t + ph); ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = textCol; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+  for (var gj2 = 0; gj2 <= nGridY; gj2++) {
+    var yv = yMin + (yMax - yMin) * (1 - gj2 / nGridY);
+    ctx.fillText(parseFloat(yv.toPrecision(3)), pad.l - 4, pad.t + gj2 * ph / nGridY + 3);
+  }
+  ctx.textAlign = 'center';
+  for (var gi2 = 0; gi2 <= nGridX; gi2++) {
+    var xv = xMin + (xMax - xMin) * gi2 / nGridX;
+    ctx.fillText(parseFloat(xv.toPrecision(3)), pad.l + gi2 * pw / nGridX, pad.t + ph + 14);
+  }
+
+  // Shaded area under integral
+  ctx.fillStyle = fillCol;
+  ctx.beginPath();
+  var started = false;
+  for (var i2 = 0; i2 <= N; i2++) {
+    var xi = xMin + (xMax - xMin) * i2 / N;
+    if (xi < lo || xi > hi) continue;
+    var yi = ys[i2];
+    if (yi === null) continue;
+    var cx2 = toCanvasX(xi), cy2 = toCanvasY(yi), cy0 = toCanvasY(0);
+    if (!started) { ctx.moveTo(cx2, cy0); ctx.lineTo(cx2, cy2); started = true; }
+    else ctx.lineTo(cx2, cy2);
+  }
+  if (started) { ctx.lineTo(toCanvasX(hi), toCanvasY(0)); ctx.closePath(); ctx.fill(); }
+
+  // Integral bound lines
+  ctx.strokeStyle = isDark ? 'rgba(240,136,62,0.6)' : 'rgba(188,76,0,0.5)';
+  ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+  [lo, hi].forEach(function(bx) {
+    var bxi = toCanvasX(bx);
+    ctx.beginPath(); ctx.moveTo(bxi, pad.t); ctx.lineTo(bxi, pad.t + ph); ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  // Function curve
+  ctx.strokeStyle = lineCol; ctx.lineWidth = 2;
+  ctx.beginPath();
+  var penDown = false;
+  for (var i3 = 0; i3 <= N; i3++) {
+    var yi3 = ys[i3];
+    if (yi3 === null) { penDown = false; continue; }
+    var cx3 = toCanvasX(xMin + (xMax - xMin) * i3 / N), cy3 = toCanvasY(yi3);
+    if (!penDown) { ctx.moveTo(cx3, cy3); penDown = true; } else ctx.lineTo(cx3, cy3);
+  }
+  ctx.stroke();
+}
 
 // ── TAYLOR ───────────────────────────────────────────────────
 function fact(n) { var r = 1; for (var i = 2; i <= n; i++) r *= i; return r; }

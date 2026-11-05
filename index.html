@@ -132,6 +132,10 @@
   .card{background:var(--surf);border:1px solid var(--bdr);border-radius:9px;padding:15px;margin-bottom:15px}
   .ctitle{font-family:var(--fd);font-size:14.5px;font-weight:600;letter-spacing:.03em;margin-bottom:11px}
   .ucwrap{display:flex;justify-content:center;overflow-x:auto}
+  .gcanvas{margin-top:12px;border:1px solid var(--bdr);border-radius:9px;width:100%;background:var(--surf);display:block}
+  #tgFns .tgb[data-fn="sin"].on{background:var(--acc);color:#fff}
+  #tgFns .tgb[data-fn="cos"].on{background:var(--green);color:#fff}
+  #tgFns .tgb[data-fn="tan"].on{background:var(--warm);color:#fff}
 
   /* Scrollbar */
   ::-webkit-scrollbar{width:5px;height:5px}
@@ -241,6 +245,17 @@
   </div>
   <div class="brow"><button class="btn" onclick="doTrig()">Compute</button></div>
   <div id="tOutput" class="tgrid"></div>
+
+  <div class="card" style="margin-top:22px">
+    <div class="ctitle">Function Graph</div>
+    <div class="sdesc" style="margin-bottom:11px">sin, cos and tan over [−2π, 2π]. The dashed line is the current angle.</div>
+    <div class="tgg" id="tgFns">
+      <button class="tgb on" data-fn="sin" onclick="togTrigFn(this)">sin</button>
+      <button class="tgb on" data-fn="cos" onclick="togTrigFn(this)">cos</button>
+      <button class="tgb on" data-fn="tan" onclick="togTrigFn(this)">tan</button>
+    </div>
+    <canvas id="trigCanvas" class="gcanvas" width="860" height="300"></canvas>
+  </div>
 
   <div class="card" style="margin-top:22px">
     <div class="ctitle">Inverse Trigonometric</div>
@@ -496,6 +511,7 @@ document.getElementById('themeBtn').addEventListener('click', () => {
   dark = !dark;
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   buildUC();
+  drawTrigGraph();
 });
 
 // ── UTILITY ──────────────────────────────────────────────────
@@ -670,9 +686,16 @@ document.getElementById('lExpr').addEventListener('keydown', function(e) { if (e
 
 // ── TRIG ─────────────────────────────────────────────────────
 var tMode = 'deg', iMode = 'deg';
+var trigFnsOn = { sin: true, cos: true, tan: true };
 function setTMode(b) {
   document.querySelectorAll('#tModeTgg .tgb').forEach(function(x) { x.classList.remove('on'); });
   b.classList.add('on'); tMode = b.dataset.v;
+  doTrig();
+}
+function togTrigFn(b) {
+  b.classList.toggle('on');
+  trigFnsOn[b.dataset.fn] = b.classList.contains('on');
+  drawTrigGraph();
 }
 function setIMode(b) {
   document.querySelectorAll('#iModeTgg .tgb').forEach(function(x) { x.classList.remove('on'); });
@@ -698,6 +721,145 @@ function doTrig() {
     var v = fn.f(rad);
     return '<div class="tcard"><div class="tcname">' + fn.n + '(' + esc(disp) + ')</div><div class="tcval">' + esc(fmtTrig(v)) + '</div><div class="tcfml">' + fn.fm + '</div></div>';
   }).join('');
+  drawTrigGraph();
+}
+
+function wrapToRange(x, min, max) {
+  var span = max - min;
+  var t = (x - min) % span;
+  if (t < 0) t += span;
+  return t + min;
+}
+
+function piTickLabel(x) {
+  var k = Math.round(x / (Math.PI / 2));
+  if (Math.abs(x - k * Math.PI / 2) > 1e-8) return '';
+  if (k === 0) return '0';
+  if (k === 2) return 'π';
+  if (k === -2) return '−π';
+  if (k === 4) return '2π';
+  if (k === -4) return '−2π';
+  if (k % 2 === 0) {
+    var n = k / 2;
+    return (n === -1 ? '−' : n === 1 ? '' : n) + 'π';
+  }
+  if (k === 1) return 'π/2';
+  if (k === -1) return '−π/2';
+  return k + 'π/2';
+}
+
+function drawTrigGraph() {
+  var canvas = document.getElementById('trigCanvas');
+  if (!canvas) return;
+  var W = canvas.width, H = canvas.height;
+  var ctx = canvas.getContext('2d');
+  var isDark = document.documentElement.dataset.theme === 'dark' ||
+    (document.documentElement.dataset.theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  var bgCol   = isDark ? '#161b22' : '#ffffff';
+  var gridCol = isDark ? '#21262d' : '#e8edf2';
+  var axCol   = isDark ? '#8b949e' : '#57606a';
+  var textCol = isDark ? '#8b949e' : '#57606a';
+  var asyCol  = isDark ? 'rgba(248,81,73,0.35)' : 'rgba(207,34,46,0.3)';
+  var markCol = isDark ? '#e6edf3' : '#1f2328';
+
+  var pal = {
+    sin: isDark ? '#388bfd' : '#0969da',
+    cos: isDark ? '#56d364' : '#1a7f37',
+    tan: isDark ? '#f0883e' : '#bc4c00'
+  };
+
+  var pad = { l:48, r:18, t:16, b:32 };
+  var pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  var xMin = -2 * Math.PI, xMax = 2 * Math.PI;
+  var yMin = trigFnsOn.tan ? -3.2 : -1.6;
+  var yMax = trigFnsOn.tan ?  3.2 :  1.6;
+
+  var toX = function(x) { return pad.l + (x - xMin) / (xMax - xMin) * pw; };
+  var toY = function(y) { return pad.t + (1 - (y - yMin) / (yMax - yMin)) * ph; };
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = bgCol;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = gridCol; ctx.lineWidth = 1;
+  for (var k = -4; k <= 4; k++) {
+    var gx = toX(k * Math.PI / 2);
+    ctx.beginPath(); ctx.moveTo(gx, pad.t); ctx.lineTo(gx, pad.t + ph); ctx.stroke();
+  }
+  var yTicks = trigFnsOn.tan ? [-3,-2,-1,0,1,2,3] : [-1,0,1];
+  yTicks.forEach(function(yv) {
+    var gy = toY(yv);
+    ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(pad.l + pw, gy); ctx.stroke();
+  });
+
+  ctx.strokeStyle = axCol; ctx.lineWidth = 1.2;
+  var y0 = toY(0);
+  ctx.beginPath(); ctx.moveTo(pad.l, y0); ctx.lineTo(pad.l + pw, y0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(toX(0), pad.t); ctx.lineTo(toX(0), pad.t + ph); ctx.stroke();
+
+  ctx.fillStyle = textCol; ctx.font = '11px Inter, system-ui, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (var k2 = -4; k2 <= 4; k2++) {
+    var xv = k2 * Math.PI / 2;
+    ctx.fillText(piTickLabel(xv), toX(xv), pad.t + ph + 6);
+  }
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  yTicks.forEach(function(yv2) {
+    ctx.fillText(String(yv2), pad.l - 6, toY(yv2));
+  });
+
+  if (trigFnsOn.tan) {
+    ctx.strokeStyle = asyCol; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+    for (var ak = -3; ak <= 3; ak += 2) {
+      var ax = ak * Math.PI / 2;
+      ctx.beginPath(); ctx.moveTo(toX(ax), pad.t); ctx.lineTo(toX(ax), pad.t + ph); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+
+  var defs = [
+    { k: 'sin', f: Math.sin },
+    { k: 'cos', f: Math.cos },
+    { k: 'tan', f: Math.tan }
+  ];
+  var N = 900;
+  defs.forEach(function(d) {
+    if (!trigFnsOn[d.k]) return;
+    ctx.strokeStyle = pal[d.k]; ctx.lineWidth = 2;
+    ctx.beginPath();
+    var pen = false, prevY = null;
+    for (var i = 0; i <= N; i++) {
+      var x = xMin + (xMax - xMin) * i / N;
+      var y = d.f(x);
+      if (!isFinite(y) || y < yMin - 0.5 || y > yMax + 0.5) { pen = false; prevY = null; continue; }
+      if (prevY !== null && Math.abs(y - prevY) > (yMax - yMin) * 0.6) { pen = false; }
+      var cx = toX(x), cy = toY(y);
+      if (!pen) { ctx.moveTo(cx, cy); pen = true; } else ctx.lineTo(cx, cy);
+      prevY = y;
+    }
+    ctx.stroke();
+  });
+
+  var a = parseFloat(document.getElementById('tAngle').value);
+  if (!isNaN(a)) {
+    var rad = wrapToRange(toRad(a, tMode), xMin, xMax);
+    ctx.strokeStyle = isDark ? 'rgba(230,237,243,0.45)' : 'rgba(31,35,40,0.4)';
+    ctx.lineWidth = 1; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(toX(rad), pad.t); ctx.lineTo(toX(rad), pad.t + ph); ctx.stroke();
+    ctx.setLineDash([]);
+    defs.forEach(function(d) {
+      if (!trigFnsOn[d.k]) return;
+      var y = d.f(rad);
+      if (!isFinite(y) || y < yMin || y > yMax) return;
+      ctx.beginPath();
+      ctx.arc(toX(rad), toY(y), 4, 0, Math.PI * 2);
+      ctx.fillStyle = pal[d.k];
+      ctx.fill();
+      ctx.strokeStyle = markCol; ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+  }
 }
 
 function doInvTrig() {
@@ -717,6 +879,7 @@ function doInvTrig() {
 }
 
 setTimeout(doTrig, 80);
+document.getElementById('tAngle').addEventListener('input', function() { drawTrigGraph(); });
 
 // ── DERIVATIVES ──────────────────────────────────────────────
 function doDeriv() {

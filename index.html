@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>EngineerCalc</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+  <style>
+  /* Layout: sticky header + tabbed main, dark-first technical */
+  :root {
+    --bg:    #0d1117;
+    --surf:  #161b22;
+    --surf2: #21262d;
+    --bdr:   #30363d;
+    --fg:    #e6edf3;
+    --fgm:   #8b949e;
+    --fgs:   #484f58;
+    --acc:   #388bfd;
+    --accbg: rgba(56,139,253,.15);
+    --warm:  #f0883e;
+    --green: #56d364;
+    --red:   #f85149;
+    --fd:    'Rajdhani', 'Arial Narrow', sans-serif;
+    --fb:    'Inter', system-ui, sans-serif;
+    --fm:    'JetBrains Mono', 'Courier New', monospace;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f0f4f8; --surf: #fff; --surf2: #e8edf2; --bdr: #d0d7de;
+      --fg: #1f2328; --fgm: #57606a; --fgs: #adb5bd;
+      --acc: #0969da; --accbg: rgba(9,105,218,.12);
+      --warm: #bc4c00; --green: #1a7f37; --red: #cf222e;
+      color-scheme: light;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f0f4f8; --surf: #fff; --surf2: #e8edf2; --bdr: #d0d7de;
+    --fg: #1f2328; --fgm: #57606a; --fgs: #adb5bd;
+    --acc: #0969da; --accbg: rgba(9,105,218,.12);
+    --warm: #bc4c00; --green: #1a7f37; --red: #cf222e;
+    color-scheme: light;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:var(--fb);font-size:14px;line-height:1.6;display:flex;flex-direction:column}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:110;background:var(--surf)}
+
+  /* Header */
+  .hdr{position:sticky;top:env(safe-area-inset-top,0px);z-index:100;background:var(--surf);border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:12px;padding-block:9px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+  .logo{font-family:var(--fd);font-weight:700;font-size:21px;letter-spacing:.06em;color:var(--acc);flex-shrink:0;white-space:nowrap}
+  .logo b{color:var(--fg);font-weight:700}
+  .tabnav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1}
+  .tabnav::-webkit-scrollbar{display:none}
+  .tbtn{background:none;border:none;color:var(--fgm);cursor:pointer;font-family:var(--fb);font-size:12.5px;font-weight:500;padding:5px 12px;border-radius:6px;white-space:nowrap;transition:color .15s,background .15s}
+  .tbtn:hover{color:var(--fg);background:var(--surf2)}
+  .tbtn.on{color:var(--acc);background:var(--accbg)}
+  .theme-btn{background:none;border:1px solid var(--bdr);border-radius:6px;color:var(--fgm);cursor:pointer;font-size:12px;padding:5px 10px;flex-shrink:0;transition:color .15s,border-color .15s}
+  .theme-btn:hover{color:var(--fg);border-color:var(--fgm)}
+
+  /* Main */
+  main{flex:1;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));padding-block:24px;max-width:900px;width:100%;margin:0 auto}
+  .tc{display:none}.tc.on{display:block}
+
+  /* Typography */
+  .stitle{font-family:var(--fd);font-size:19px;font-weight:700;letter-spacing:.03em;margin-bottom:3px}
+  .sdesc{color:var(--fgm);font-size:12.5px;margin-bottom:18px}
+
+  /* Inputs */
+  .ig{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+  .lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--fgm)}
+  .ifield{background:var(--surf);border:1px solid var(--bdr);border-radius:7px;color:var(--fg);font-family:var(--fm);font-size:14px;padding:9px 13px;width:100%;transition:border-color .15s,box-shadow .15s}
+  .ifield:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 18%,transparent)}
+  .ifield.err{border-color:var(--red)}
+  .irow{display:flex;gap:10px;flex-wrap:wrap}
+  .irow .ig{flex:1;min-width:90px}
+  .hint{color:var(--fgs);font-size:11.5px;margin-top:3px}
+
+  /* Buttons */
+  .btn{background:var(--acc);border:none;border-radius:7px;color:#fff;cursor:pointer;font-family:var(--fb);font-size:13.5px;font-weight:600;padding:9px 22px;transition:opacity .15s}
+  .btn:hover{opacity:.88}.btn:active{opacity:.75}
+  .btn2{background:var(--surf2);border:1px solid var(--bdr);border-radius:7px;color:var(--fg);cursor:pointer;font-family:var(--fb);font-size:12.5px;font-weight:500;padding:7px 14px;transition:background .15s}
+  .btn2:hover{background:var(--bdr)}
+  .brow{display:flex;gap:7px;align-items:center;margin-top:2px;flex-wrap:wrap}
+  .tgg{display:flex;background:var(--surf);border:1px solid var(--bdr);border-radius:7px;overflow:hidden}
+  .tgb{background:none;border:none;color:var(--fgm);cursor:pointer;font-size:12.5px;font-weight:500;padding:6px 14px;transition:color .15s,background .15s;white-space:nowrap}
+  .tgb.on{background:var(--acc);color:#fff}
+
+  /* Result panels */
+  .rpanel{background:var(--surf);border:1px solid var(--bdr);border-radius:9px;margin-top:18px;overflow:hidden}
+  .rhead{align-items:center;background:var(--surf2);border-bottom:1px solid var(--bdr);display:flex;font-size:10.5px;font-weight:600;gap:7px;letter-spacing:.1em;padding:7px 13px;text-transform:uppercase;color:var(--fgm)}
+  .rbody{padding:15px}
+  .rval{font-family:var(--fm);font-size:26px;font-weight:500;color:var(--warm);font-variant-numeric:tabular-nums;word-break:break-all}
+  .rexpr{font-family:var(--fm);font-size:14px;color:var(--acc);margin-top:7px;word-break:break-word}
+  .rsteps{margin-top:11px;display:flex;flex-direction:column;gap:7px}
+  .rstep{align-items:flex-start;background:var(--surf2);border-radius:5px;display:flex;font-size:12.5px;gap:9px;padding:9px 11px}
+  .slbl{color:var(--fgm);flex-shrink:0;font-size:10.5px;font-weight:600;letter-spacing:.07em;min-width:76px;padding-top:2px;text-transform:uppercase}
+  .sval{color:var(--fg);font-family:var(--fm);min-width:0;word-break:break-all}
+  .errmsg{color:var(--red);font-family:var(--fm);font-size:12.5px}
+
+  /* Trig cards */
+  .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:11px}
+  .tcard{background:var(--surf2);border:1px solid var(--bdr);border-radius:7px;padding:12px;text-align:center}
+  .tcname{color:var(--acc);font-family:var(--fm);font-size:12px;font-weight:500;margin-bottom:5px}
+  .tcval{color:var(--warm);font-family:var(--fm);font-size:19px;font-weight:500;font-variant-numeric:tabular-nums}
+  .tcfml{color:var(--fgm);font-size:10.5px;margin-top:3px}
+
+  /* Matrix */
+  .mwrap{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-top:4px}
+  .mlbl{font-family:var(--fd);font-size:17px;font-weight:600;color:var(--fgm);margin-bottom:7px}
+  .mgrid{display:grid;gap:5px}
+  .mcell{background:var(--surf);border:1px solid var(--bdr);border-radius:4px;color:var(--fg);font-family:var(--fm);font-size:13px;padding:5px 7px;text-align:center;width:58px;font-variant-numeric:tabular-nums;transition:border-color .15s}
+  .mcell:focus{outline:none;border-color:var(--acc)}
+  .msel{background:var(--surf);border:1px solid var(--bdr);border-radius:6px;color:var(--fg);font-size:12.5px;padding:5px 9px;cursor:pointer}
+
+  /* History */
+  .hlist{display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto}
+  .hitem{align-items:center;background:var(--surf2);border-radius:5px;cursor:pointer;display:flex;font-family:var(--fm);font-size:11.5px;gap:7px;padding:7px 11px;transition:background .1s}
+  .hitem:hover{background:var(--bdr)}
+  .hexpr{color:var(--fg);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .hres{color:var(--warm);flex-shrink:0}
+
+  /* Reference */
+  .rtable{border-collapse:collapse;width:100%;font-size:12.5px}
+  .rtable th{background:var(--surf2);border-bottom:2px solid var(--bdr);color:var(--fgm);font-size:10.5px;font-weight:600;letter-spacing:.07em;padding:7px 11px;text-align:left;text-transform:uppercase}
+  .rtable td{border-bottom:1px solid var(--bdr);font-family:var(--fm);padding:7px 11px;vertical-align:middle}
+  .rtable tr:last-child td{border-bottom:none}
+  .ang{color:var(--acc)}.val{color:var(--warm)}
+  .refcols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .card{background:var(--surf);border:1px solid var(--bdr);border-radius:9px;padding:15px;margin-bottom:15px}
+  .ctitle{font-family:var(--fd);font-size:14.5px;font-weight:600;letter-spacing:.03em;margin-bottom:11px}
+  .ucwrap{display:flex;justify-content:center;overflow-x:auto}
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+  :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  select.ifield{cursor:pointer}
+  @media(max-width:600px){
+    .refcols{grid-template-columns:1fr}
+    .tgrid{grid-template-columns:repeat(2,1fr)}
+  }
+  </style>
+</head>
+<body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.1/math.min.js"></script>
+
+<header class="hdr">
+  <div class="logo">Eng<b>Calc</b></div>
+  <nav class="tabnav" id="tabnav">
+    <button class="tbtn on" data-tab="evaluate">Evaluate</button>
+    <button class="tbtn" data-tab="limits">Limits</button>
+    <button class="tbtn" data-tab="trig">Trigonometry</button>
+    <button class="tbtn" data-tab="deriv">Derivatives</button>
+    <button class="tbtn" data-tab="integ">Integrals</button>
+    <button class="tbtn" data-tab="taylor">Taylor Series</button>
+    <button class="tbtn" data-tab="matrix">Matrices</button>
+    <button class="tbtn" data-tab="ref">Reference</button>
+  </nav>
+  <button class="theme-btn" id="themeBtn">&#9728; / &#9790;</button>
+</header>
+
+<main>
+
+<!-- EVALUATE -->
+<section id="tab-evaluate" class="tc on">
+  <div class="stitle">Expression Evaluator</div>
+  <div class="sdesc">Evaluate any math expression. Supports sin, cos, tan, sqrt, log, ln, pi, e, i, and more.</div>
+  <div class="ig">
+    <label class="lbl" for="eExpr">Expression</label>
+    <input class="ifield" id="eExpr" type="text" value="sin(pi/4)^2 + cos(pi/4)^2" spellcheck="false">
+    <div class="hint">Examples: sqrt(2^3 + 4^2) &middot; log(100, 10) &middot; (3+4i)^2 &middot; factorial(7)</div>
+  </div>
+  <div class="brow">
+    <button class="btn" onclick="doEval()">Calculate</button>
+    <button class="btn2" onclick="clearEval()">Clear</button>
+  </div>
+  <div id="eResult" class="rpanel" hidden>
+    <div class="rhead">Result</div>
+    <div class="rbody" id="eResultBody"></div>
+  </div>
+  <div id="eHistCard" class="card" style="margin-top:18px" hidden>
+    <div class="ctitle">History</div>
+    <div class="hlist" id="hList"></div>
+  </div>
+</section>
+
+<!-- LIMITS -->
+<section id="tab-limits" class="tc">
+  <div class="stitle">Limit Calculator</div>
+  <div class="sdesc">Numerical evaluation of limits. Supports one-sided limits and limits at &plusmn;&infin;.</div>
+  <div class="ig">
+    <label class="lbl" for="lExpr">Expression f(x)</label>
+    <input class="ifield" id="lExpr" type="text" value="sin(x) / x" spellcheck="false">
+  </div>
+  <div class="irow">
+    <div class="ig" style="flex:0 0 70px">
+      <label class="lbl" for="lVar">Variable</label>
+      <input class="ifield" id="lVar" type="text" value="x">
+    </div>
+    <div class="ig">
+      <label class="lbl" for="lPt">Approaches</label>
+      <input class="ifield" id="lPt" type="text" value="0" placeholder="0, Infinity, -Infinity">
+    </div>
+    <div class="ig" style="flex:0 0 auto">
+      <label class="lbl">Direction</label>
+      <div class="tgg" id="lDirTgg">
+        <button class="tgb on" data-v="both" onclick="setDir(this)">Both</button>
+        <button class="tgb" data-v="right" onclick="setDir(this)">Right +</button>
+        <button class="tgb" data-v="left" onclick="setDir(this)">Left &minus;</button>
+      </div>
+    </div>
+  </div>
+  <div class="brow"><button class="btn" onclick="doLimit()">Calculate Limit</button></div>
+  <div id="lResult" class="rpanel" hidden>
+    <div class="rhead">Limit Analysis</div>
+    <div class="rbody" id="lResultBody"></div>
+  </div>
+</section>
+
+<!-- TRIGONOMETRY -->
+<section id="tab-trig" class="tc">
+  <div class="stitle">Trigonometric Functions</div>
+  <div class="sdesc">All six trigonometric functions and their inverses.</div>
+  <div class="irow">
+    <div class="ig">
+      <label class="lbl" for="tAngle">Angle</label>
+      <input class="ifield" id="tAngle" type="number" value="45">
+    </div>
+    <div class="ig" style="flex:0 0 auto">
+      <label class="lbl">Mode</label>
+      <div class="tgg" id="tModeTgg">
+        <button class="tgb on" data-v="deg" onclick="setTMode(this)">Degrees</button>
+        <button class="tgb" data-v="rad" onclick="setTMode(this)">Radians</button>
+      </div>
+    </div>
+  </div>
+  <div class="brow"><button class="btn" onclick="doTrig()">Compute</button></div>
+  <div id="tOutput" class="tgrid"></div>
+
+  <div class="card" style="margin-top:22px">
+    <div class="ctitle">Inverse Trigonometric</div>
+    <div class="irow">
+      <div class="ig">
+        <label class="lbl" for="iVal">Value</label>
+        <input class="ifield" id="iVal" type="number" value="0.7071" step="0.0001">
+      </div>
+      <div class="ig" style="flex:0 0 130px">
+        <label class="lbl" for="iFn">Function</label>
+        <select class="ifield" id="iFn">
+          <option value="asin">arcsin</option>
+          <option value="acos">arccos</option>
+          <option value="atan">arctan</option>
+        </select>
+      </div>
+      <div class="ig" style="flex:0 0 auto">
+        <label class="lbl">Output</label>
+        <div class="tgg" id="iModeTgg">
+          <button class="tgb on" data-v="deg" onclick="setIMode(this)">Degrees</button>
+          <button class="tgb" data-v="rad" onclick="setIMode(this)">Radians</button>
+        </div>
+      </div>
+    </div>
+    <div class="brow"><button class="btn" onclick="doInvTrig()">Compute Inverse</button></div>
+    <div id="iResult" class="rpanel" hidden style="margin-top:11px">
+      <div class="rhead">Inverse Result</div>
+      <div class="rbody" id="iResultBody"></div>
+    </div>
+  </div>
+</section>
+
+<!-- DERIVATIVES -->
+<section id="tab-deriv" class="tc">
+  <div class="stitle">Symbolic Differentiation</div>
+  <div class="sdesc">Compute exact symbolic derivatives up to 4th order, with optional numerical evaluation.</div>
+  <div class="ig">
+    <label class="lbl" for="dExpr">Expression f(x)</label>
+    <input class="ifield" id="dExpr" type="text" value="x^3 * sin(x) + 2*x^2 - 5*x + 1" spellcheck="false">
+  </div>
+  <div class="irow">
+    <div class="ig" style="flex:0 0 70px">
+      <label class="lbl" for="dVar">Variable</label>
+      <input class="ifield" id="dVar" type="text" value="x">
+    </div>
+    <div class="ig" style="flex:0 0 140px">
+      <label class="lbl" for="dOrd">Order</label>
+      <select class="ifield" id="dOrd">
+        <option value="1">1st &mdash; f&prime;(x)</option>
+        <option value="2">2nd &mdash; f&Prime;(x)</option>
+        <option value="3">3rd &mdash; f&#8243;(x)</option>
+        <option value="4">4th &mdash; f&#8308;(x)</option>
+      </select>
+    </div>
+    <div class="ig">
+      <label class="lbl" for="dPt">Evaluate at x =</label>
+      <input class="ifield" id="dPt" type="text" value="" placeholder="optional">
+    </div>
+  </div>
+  <div class="brow"><button class="btn" onclick="doDeriv()">Differentiate</button></div>
+  <div id="dResult" class="rpanel" hidden>
+    <div class="rhead">Derivative</div>
+    <div class="rbody" id="dResultBody"></div>
+  </div>
+</section>
+
+<!-- INTEGRALS -->
+<section id="tab-integ" class="tc">
+  <div class="stitle">Numerical Integration</div>
+  <div class="sdesc">Definite integrals via adaptive Simpson&apos;s rule &mdash; accurate to ~8 significant figures.</div>
+  <div class="ig">
+    <label class="lbl" for="iExpr">Expression f(x)</label>
+    <input class="ifield" id="iExpr" type="text" value="sin(x) * e^(-x)" spellcheck="false">
+  </div>
+  <div class="irow">
+    <div class="ig" style="flex:0 0 70px">
+      <label class="lbl" for="iVr">Variable</label>
+      <input class="ifield" id="iVr" type="text" value="x">
+    </div>
+    <div class="ig">
+      <label class="lbl" for="iLo">Lower bound a</label>
+      <input class="ifield" id="iLo" type="text" value="0">
+    </div>
+    <div class="ig">
+      <label class="lbl" for="iHi">Upper bound b</label>
+      <input class="ifield" id="iHi" type="text" value="pi">
+    </div>
+  </div>
+  <div class="brow"><button class="btn" onclick="doInteg()">Integrate</button></div>
+  <div id="intResult" class="rpanel" hidden>
+    <div class="rhead">Integration Result</div>
+    <div class="rbody" id="intResultBody"></div>
+  </div>
+</section>
+
+<!-- TAYLOR -->
+<section id="tab-taylor" class="tc">
+  <div class="stitle">Taylor / Maclaurin Series</div>
+  <div class="sdesc">Polynomial expansion of a function around center point a. Set a = 0 for Maclaurin.</div>
+  <div class="ig">
+    <label class="lbl" for="tyExpr">Expression f(x)</label>
+    <input class="ifield" id="tyExpr" type="text" value="sin(x)" spellcheck="false">
+  </div>
+  <div class="irow">
+    <div class="ig" style="flex:0 0 70px">
+      <label class="lbl" for="tyVar">Variable</label>
+      <input class="ifield" id="tyVar" type="text" value="x">
+    </div>
+    <div class="ig" style="flex:0 0 100px">
+      <label class="lbl" for="tyCtr">Center a</label>
+      <input class="ifield" id="tyCtr" type="text" value="0">
+    </div>
+    <div class="ig" style="flex:0 0 130px">
+      <label class="lbl" for="tyN">Terms</label>
+      <select class="ifield" id="tyN">
+        <option value="4">4 terms</option>
+        <option value="5" selected>5 terms</option>
+        <option value="6">6 terms</option>
+        <option value="7">7 terms</option>
+        <option value="8">8 terms</option>
+      </select>
+    </div>
+  </div>
+  <div class="brow"><button class="btn" onclick="doTaylor()">Expand Series</button></div>
+  <div id="tyResult" class="rpanel" hidden>
+    <div class="rhead">Series Expansion</div>
+    <div class="rbody" id="tyResultBody"></div>
+  </div>
+</section>
+
+<!-- MATRICES -->
+<section id="tab-matrix" class="tc">
+  <div class="stitle">Matrix Operations</div>
+  <div class="sdesc">Determinant, inverse, transpose, multiplication, rank, and trace.</div>
+  <div class="irow" style="align-items:flex-end;margin-bottom:14px">
+    <div class="ig" style="flex:0 0 auto">
+      <label class="lbl">Matrix A</label>
+      <select class="msel" id="msA" onchange="buildMat('A')">
+        <option value="2">2&times;2</option>
+        <option value="3" selected>3&times;3</option>
+        <option value="4">4&times;4</option>
+      </select>
+    </div>
+    <div class="ig" style="flex:0 0 auto">
+      <label class="lbl">Matrix B</label>
+      <select class="msel" id="msB" onchange="buildMat('B')">
+        <option value="2">2&times;2</option>
+        <option value="3" selected>3&times;3</option>
+        <option value="4">4&times;4</option>
+      </select>
+    </div>
+  </div>
+  <div class="mwrap">
+    <div><div class="mlbl">A</div><div class="mgrid" id="mgA"></div></div>
+    <div><div class="mlbl">B</div><div class="mgrid" id="mgB"></div></div>
+  </div>
+  <div class="brow" style="margin-top:14px">
+    <button class="btn" onclick="matOp('det')">det(A)</button>
+    <button class="btn2" onclick="matOp('inv')">A&#8315;&#185;</button>
+    <button class="btn2" onclick="matOp('trans')">A&#7488;</button>
+    <button class="btn2" onclick="matOp('mul')">A&times;B</button>
+    <button class="btn2" onclick="matOp('add')">A+B</button>
+    <button class="btn2" onclick="matOp('rank')">rank(A)</button>
+    <button class="btn2" onclick="matOp('trace')">trace(A)</button>
+  </div>
+  <div id="mResult" class="rpanel" hidden>
+    <div class="rhead">Matrix Result</div>
+    <div class="rbody" id="mResultBody"></div>
+  </div>
+</section>
+
+<!-- REFERENCE -->
+<section id="tab-ref" class="tc">
+  <div class="stitle">Reference</div>
+  <div class="sdesc">Common trigonometric values, derivative and integral rules, unit circle.</div>
+  <div class="refcols">
+    <div>
+      <div class="card">
+        <div class="ctitle">Trig Values</div>
+        <div style="overflow-x:auto">
+          <table class="rtable">
+            <thead><tr><th>&deg;</th><th>rad</th><th>sin</th><th>cos</th><th>tan</th></tr></thead>
+            <tbody id="trigTbl"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ctitle">Derivative Rules</div>
+        <table class="rtable">
+          <thead><tr><th>f(x)</th><th>f&prime;(x)</th></tr></thead>
+          <tbody>
+            <tr><td class="ang">c</td><td class="val">0</td></tr>
+            <tr><td class="ang">x&#8319;</td><td class="val">n &middot; x&#8319;&#8315;&#185;</td></tr>
+            <tr><td class="ang">e&#739;</td><td class="val">e&#739;</td></tr>
+            <tr><td class="ang">a&#739;</td><td class="val">a&#739; &middot; ln(a)</td></tr>
+            <tr><td class="ang">ln(x)</td><td class="val">1/x</td></tr>
+            <tr><td class="ang">log&#8336;(x)</td><td class="val">1/(x&middot;ln a)</td></tr>
+            <tr><td class="ang">sin(x)</td><td class="val">cos(x)</td></tr>
+            <tr><td class="ang">cos(x)</td><td class="val">&minus;sin(x)</td></tr>
+            <tr><td class="ang">tan(x)</td><td class="val">sec&sup2;(x)</td></tr>
+            <tr><td class="ang">cot(x)</td><td class="val">&minus;csc&sup2;(x)</td></tr>
+            <tr><td class="ang">arcsin(x)</td><td class="val">1/&radic;(1&minus;x&sup2;)</td></tr>
+            <tr><td class="ang">arccos(x)</td><td class="val">&minus;1/&radic;(1&minus;x&sup2;)</td></tr>
+            <tr><td class="ang">arctan(x)</td><td class="val">1/(1+x&sup2;)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="ctitle">Unit Circle</div>
+        <div class="ucwrap"><svg id="ucSVG" viewBox="0 0 380 380" width="340" style="max-width:100%;display:block"></svg></div>
+      </div>
+      <div class="card">
+        <div class="ctitle">Common Integrals</div>
+        <table class="rtable">
+          <thead><tr><th>f(x)</th><th>&int;f(x)dx</th></tr></thead>
+          <tbody>
+            <tr><td class="ang">x&#8319; (n&ne;&minus;1)</td><td class="val">x&#8319;&#8314;&#185;/(n+1) + C</td></tr>
+            <tr><td class="ang">1/x</td><td class="val">ln|x| + C</td></tr>
+            <tr><td class="ang">e&#739;</td><td class="val">e&#739; + C</td></tr>
+            <tr><td class="ang">a&#739;</td><td class="val">a&#739;/ln(a) + C</td></tr>
+            <tr><td class="ang">sin(x)</td><td class="val">&minus;cos(x) + C</td></tr>
+            <tr><td class="ang">cos(x)</td><td class="val">sin(x) + C</td></tr>
+            <tr><td class="ang">tan(x)</td><td class="val">&minus;ln|cos x| + C</td></tr>
+            <tr><td class="ang">1/&radic;(1&minus;x&sup2;)</td><td class="val">arcsin(x) + C</td></tr>
+            <tr><td class="ang">1/(1+x&sup2;)</td><td class="val">arctan(x) + C</td></tr>
+            <tr><td class="ang">ln(x)</td><td class="val">x&middot;ln(x) &minus; x + C</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ── TABS ─────────────────────────────────────────────────────
+document.getElementById('tabnav').addEventListener('click', e => {
+  const b = e.target.closest('.tbtn');
+  if (!b) return;
+  document.querySelectorAll('.tbtn').forEach(x => x.classList.remove('on'));
+  document.querySelectorAll('.tc').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  document.getElementById('tab-' + b.dataset.tab).classList.add('on');
+});
+
+// ── THEME ────────────────────────────────────────────────────
+let dark = true;
+document.getElementById('themeBtn').addEventListener('click', () => {
+  dark = !dark;
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  buildUC();
+});
+
+// ── UTILITY ──────────────────────────────────────────────────
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function fmtNum(v) {
+  if (typeof v !== 'number') {
+    if (v && typeof v === 'object' && v.re !== undefined) {
+      const re = sig(v.re,8), im = sig(v.im,8);
+      if (im === 0) return String(re);
+      return im > 0 ? re + ' + ' + im + 'i' : re + ' − ' + Math.abs(im) + 'i';
+    }
+    return String(v);
+  }
+  if (isNaN(v)) return 'NaN';
+  if (!isFinite(v)) return v > 0 ? '+∞' : '−∞';
+  if (Math.abs(v) > 1e12 || (Math.abs(v) < 1e-8 && v !== 0))
+    return v.toExponential(6);
+  return parseFloat(v.toPrecision(10)).toString();
+}
+
+function sig(x, n) {
+  if (x === 0) return 0;
+  const d = Math.ceil(Math.log10(Math.abs(x)));
+  const m = Math.pow(10, n - d);
+  return Math.round(x * m) / m;
+}
+
+function fmtTrig(v) {
+  if (!isFinite(v)) return '±∞';
+  if (Math.abs(v) < 1e-10) return '0';
+  if (Math.abs(Math.abs(v) - 1) < 1e-10) return v > 0 ? '1' : '−1';
+  return parseFloat(v.toPrecision(7)).toString();
+}
+
+function steps(arr) {
+  return '<div class="rsteps">' + arr.map(function(item) {
+    var l = item[0], v = item[1], c = item[2];
+    return '<div class="rstep"><span class="slbl">' + esc(l) + '</span><span class="sval"' + (c ? ' style="color:var(--warm)"' : '') + '>' + esc(v) + '</span></div>';
+  }).join('') + '</div>';
+}
+
+function showErr(el, msg) { el.innerHTML = '<div class="errmsg">⚠ ' + esc(msg) + '</div>'; }
+
+// ── EVALUATE ─────────────────────────────────────────────────
+var evalHist = [];
+
+function doEval() {
+  var expr = document.getElementById('eExpr').value.trim();
+  if (!expr) return;
+  var panel = document.getElementById('eResult');
+  var body = document.getElementById('eResultBody');
+  panel.hidden = false;
+  try {
+    var r = math.evaluate(expr);
+    var fmt = fmtNum(r);
+    document.getElementById('eExpr').classList.remove('err');
+    body.innerHTML = '<div class="rval">' + esc(fmt) + '</div>';
+    evalHist.unshift({ expr: expr, result: fmt });
+    if (evalHist.length > 25) evalHist.pop();
+    renderHist();
+  } catch(e) {
+    document.getElementById('eExpr').classList.add('err');
+    showErr(body, e.message);
+  }
+}
+
+function renderHist() {
+  var c = document.getElementById('eHistCard');
+  var l = document.getElementById('hList');
+  if (!evalHist.length) { c.hidden = true; return; }
+  c.hidden = false;
+  l.innerHTML = evalHist.map(function(h, i) {
+    return '<div class="hitem" onclick="loadH(' + i + ')"><span class="hexpr">' + esc(h.expr) + '</span><span class="hres">= ' + esc(h.result) + '</span></div>';
+  }).join('');
+}
+
+function loadH(i) {
+  document.getElementById('eExpr').value = evalHist[i].expr;
+  doEval();
+}
+
+function clearEval() {
+  document.getElementById('eExpr').value = '';
+  document.getElementById('eResult').hidden = true;
+  document.getElementById('eExpr').classList.remove('err');
+}
+
+document.getElementById('eExpr').addEventListener('keydown', function(e) { if (e.key === 'Enter') doEval(); });
+
+// ── LIMITS ───────────────────────────────────────────────────
+var limDir = 'both';
+function setDir(b) {
+  document.querySelectorAll('#lDirTgg .tgb').forEach(function(x) { x.classList.remove('on'); });
+  b.classList.add('on'); limDir = b.dataset.v;
+}
+
+function evalAt(expr, variable, x) {
+  var s = {}; s[variable] = x;
+  var r = math.evaluate(expr, s);
+  return typeof r === 'number' ? r : NaN;
+}
+
+function limitSeq(vals) {
+  var v = vals.filter(isFinite);
+  if (!v.length) return NaN;
+  var last = vals[vals.length - 1];
+  if (!isFinite(last)) return last;
+  return v[v.length - 1];
+}
+
+function doLimit() {
+  var expr = document.getElementById('lExpr').value.trim();
+  var variable = document.getElementById('lVar').value.trim() || 'x';
+  var ptStr = document.getElementById('lPt').value.trim();
+  var panel = document.getElementById('lResult');
+  var body = document.getElementById('lResultBody');
+  panel.hidden = false;
+  try {
+    var infP = ptStr === 'Infinity' || ptStr === '+Infinity' || ptStr === 'inf';
+    var infN = ptStr === '-Infinity' || ptStr === '-inf';
+    var eps = [1e-1,1e-2,1e-3,1e-4,1e-5,1e-6,1e-7];
+    var RL = null, LL = null;
+
+    if (infP) {
+      var vs = [1e3,1e4,1e5,1e6,1e7,1e8,1e9];
+      RL = limitSeq(vs.map(function(x) { return evalAt(expr, variable, x); }));
+    } else if (infN) {
+      var vs2 = [-1e3,-1e4,-1e5,-1e6,-1e7,-1e8,-1e9];
+      LL = limitSeq(vs2.map(function(x) { return evalAt(expr, variable, x); }));
+    } else {
+      var pt = parseFloat(ptStr);
+      if (isNaN(pt)) throw new Error('Invalid approach point');
+      if (limDir !== 'left')  RL = limitSeq(eps.map(function(e) { return evalAt(expr, variable, pt + e); }));
+      if (limDir !== 'right') LL = limitSeq(eps.map(function(e) { return evalAt(expr, variable, pt - e); }));
+    }
+
+    var fv = function(v) {
+      if (v === null) return 'N/A';
+      if (!isFinite(v) && v > 0) return '+∞';
+      if (!isFinite(v) && v < 0) return '−∞';
+      if (isNaN(v)) return 'undefined';
+      return fmtNum(v);
+    };
+
+    var dirLbl = infP ? 'x → +∞' : infN ? 'x → −∞' : 'x → ' + ptStr;
+    var html = '<div style="color:var(--fgm);font-size:12px;margin-bottom:11px">lim <sub>' + esc(dirLbl) + '</sub> ' + esc(expr) + '</div>';
+
+    var rows = [];
+    if (RL !== null) rows.push(['Right limit', fv(RL), false]);
+    if (LL !== null) rows.push(['Left limit', fv(LL), false]);
+    html += steps(rows);
+
+    if (RL !== null && LL !== null) {
+      var agree = !isNaN(RL) && !isNaN(LL) && Math.abs(RL - LL) < 1e-5;
+      if (agree) {
+        html += '<div class="rval" style="margin-top:14px">= ' + esc(fv(RL)) + '</div>';
+        html += '<div style="color:var(--green);font-size:12px;margin-top:4px">✓ Limit exists (left = right).</div>';
+      } else {
+        html += '<div style="color:var(--red);font-size:13px;margin-top:11px">✗ Limit does not exist — one-sided limits differ.</div>';
+      }
+    } else {
+      var val = RL !== null ? RL : LL;
+      if (val !== null) html += '<div class="rval" style="margin-top:14px">= ' + esc(fv(val)) + '</div>';
+    }
+
+    body.innerHTML = html;
+  } catch(e) { showErr(body, e.message); }
+}
+
+document.getElementById('lExpr').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLimit(); });
+
+// ── TRIG ─────────────────────────────────────────────────────
+var tMode = 'deg', iMode = 'deg';
+function setTMode(b) {
+  document.querySelectorAll('#tModeTgg .tgb').forEach(function(x) { x.classList.remove('on'); });
+  b.classList.add('on'); tMode = b.dataset.v;
+}
+function setIMode(b) {
+  document.querySelectorAll('#iModeTgg .tgb').forEach(function(x) { x.classList.remove('on'); });
+  b.classList.add('on'); iMode = b.dataset.v;
+}
+
+function toRad(a, m) { return m === 'deg' ? a * Math.PI / 180 : a; }
+
+function doTrig() {
+  var a = parseFloat(document.getElementById('tAngle').value);
+  if (isNaN(a)) return;
+  var rad = toRad(a, tMode);
+  var disp = tMode === 'deg' ? a + '°' : a + ' rad';
+  var fns = [
+    { n:'sin', f: function(x) { return Math.sin(x); }, fm:'opp/hyp' },
+    { n:'cos', f: function(x) { return Math.cos(x); }, fm:'adj/hyp' },
+    { n:'tan', f: function(x) { return Math.tan(x); }, fm:'opp/adj' },
+    { n:'csc', f: function(x) { return 1/Math.sin(x); }, fm:'hyp/opp' },
+    { n:'sec', f: function(x) { return 1/Math.cos(x); }, fm:'hyp/adj' },
+    { n:'cot', f: function(x) { return 1/Math.tan(x); }, fm:'adj/opp' },
+  ];
+  document.getElementById('tOutput').innerHTML = fns.map(function(fn) {
+    var v = fn.f(rad);
+    return '<div class="tcard"><div class="tcname">' + fn.n + '(' + esc(disp) + ')</div><div class="tcval">' + esc(fmtTrig(v)) + '</div><div class="tcfml">' + fn.fm + '</div></div>';
+  }).join('');
+}
+
+function doInvTrig() {
+  var v = parseFloat(document.getElementById('iVal').value);
+  var fn = document.getElementById('iFn').value;
+  var panel = document.getElementById('iResult');
+  var body = document.getElementById('iResultBody');
+  panel.hidden = false;
+  try {
+    if ((fn === 'asin' || fn === 'acos') && Math.abs(v) > 1) throw new Error('Domain: |x| ≤ 1');
+    var rad = fn === 'asin' ? Math.asin(v) : fn === 'acos' ? Math.acos(v) : Math.atan(v);
+    var result = iMode === 'deg' ? rad * 180 / Math.PI : rad;
+    var unit = iMode === 'deg' ? '°' : ' rad';
+    var names = { asin:'arcsin', acos:'arccos', atan:'arctan' };
+    body.innerHTML = '<div class="rval">' + esc(fmtNum(result)) + esc(unit) + '</div><div class="rexpr">' + names[fn] + '(' + v + ') = ' + esc(fmtNum(result)) + esc(unit) + '</div>';
+  } catch(e) { showErr(body, e.message); }
+}
+
+setTimeout(doTrig, 80);
+
+// ── DERIVATIVES ──────────────────────────────────────────────
+function doDeriv() {
+  var expr = document.getElementById('dExpr').value.trim();
+  var variable = document.getElementById('dVar').value.trim() || 'x';
+  var ord = parseInt(document.getElementById('dOrd').value);
+  var ptStr = document.getElementById('dPt').value.trim();
+  var panel = document.getElementById('dResult');
+  var body = document.getElementById('dResultBody');
+  panel.hidden = false;
+  try {
+    var cur = expr;
+    var derivs = [expr];
+    for (var i = 0; i < ord; i++) {
+      cur = math.derivative(cur, variable).toString();
+      derivs.push(cur);
+    }
+    var final = derivs[ord];
+    var ordLbls = ['f(x)', "f′(x)", "f″(x)", "f‴(x)", "f⁴(x)"];
+    var html = '<div class="rexpr" style="font-size:15px;margin-bottom:11px">' + esc(final) + '</div>';
+    if (ord > 1) {
+      var rows = derivs.slice(1).map(function(d, i) { return [ordLbls[i+1], d, false]; });
+      html += steps(rows);
+    }
+    if (ptStr !== '') {
+      var pt = parseFloat(ptStr);
+      if (!isNaN(pt)) {
+        var s = {}; s[variable] = pt;
+        var nv = math.evaluate(final, s);
+        html += steps([['f' + (ord > 1 ? '⁽' + ord + '⁾' : '′') + '(' + pt + ')', fmtNum(nv), true]]);
+      }
+    }
+    body.innerHTML = html;
+  } catch(e) { showErr(body, e.message); }
+}
+
+document.getElementById('dExpr').addEventListener('keydown', function(e) { if (e.key === 'Enter') doDeriv(); });
+
+// ── INTEGRALS ────────────────────────────────────────────────
+function simpRule(f, a, b) {
+  var c = (a + b) / 2;
+  return (b - a) / 6 * (f(a) + 4 * f(c) + f(b));
+}
+function adaptSimpson(f, a, b, tol, depth) {
+  var c = (a + b) / 2;
+  var whole = simpRule(f, a, b);
+  var left = simpRule(f, a, c);
+  var right = simpRule(f, c, b);
+  if (depth <= 0 || Math.abs(left + right - whole) <= 15 * tol)
+    return left + right + (left + right - whole) / 15;
+  return adaptSimpson(f, a, c, tol/2, depth-1) + adaptSimpson(f, c, b, tol/2, depth-1);
+}
+
+function doInteg() {
+  var expr = document.getElementById('iExpr').value.trim();
+  var variable = document.getElementById('iVr').value.trim() || 'x';
+  var loStr = document.getElementById('iLo').value.trim();
+  var hiStr = document.getElementById('iHi').value.trim();
+  var panel = document.getElementById('intResult');
+  var body = document.getElementById('intResultBody');
+  panel.hidden = false;
+  try {
+    var lo = Number(math.evaluate(loStr));
+    var hi = Number(math.evaluate(hiStr));
+    if (!isFinite(lo) || !isFinite(hi)) throw new Error('Bounds must be finite numbers');
+    var f = function(x) { var s = {}; s[variable] = x; var r = math.evaluate(expr, s); return typeof r === 'number' ? r : 0; };
+    var result = adaptSimpson(f, lo, hi, 1e-9, 20);
+    body.innerHTML = '<div style="color:var(--fgm);font-size:12px;margin-bottom:8px">∫<sub>' + esc(loStr) + '</sub><sup>' + esc(hiStr) + '</sup> ' + esc(expr) + ' d' + esc(variable) + '</div>'
+      + '<div class="rval">' + esc(fmtNum(result)) + '</div>'
+      + steps([['Method',"Adaptive Simpson's rule",false],['Interval','[' + lo + ', ' + hi + ']',false],['Result',fmtNum(result),true]]);
+  } catch(e) { showErr(body, e.message); }
+}
+
+document.getElementById('iExpr').addEventListener('keydown', function(e) { if (e.key === 'Enter') doInteg(); });
+
+// ── TAYLOR ───────────────────────────────────────────────────
+function fact(n) { var r = 1; for (var i = 2; i <= n; i++) r *= i; return r; }
+
+function doTaylor() {
+  var expr = document.getElementById('tyExpr').value.trim();
+  var variable = document.getElementById('tyVar').value.trim() || 'x';
+  var a = Number(math.evaluate(document.getElementById('tyCtr').value.trim()));
+  var n = parseInt(document.getElementById('tyN').value);
+  var panel = document.getElementById('tyResult');
+  var body = document.getElementById('tyResultBody');
+  panel.hidden = false;
+  try {
+    if (!isFinite(a)) throw new Error('Center must be a finite number');
+    var cur = expr;
+    var terms = [];
+    for (var k = 0; k < n; k++) {
+      var s = {}; s[variable] = a;
+      var fkA = Number(math.evaluate(cur, s));
+      var coef = fkA / fact(k);
+      if (Math.abs(coef) > 1e-15) terms.push({ k: k, fkA: fkA, coef: coef });
+      if (k < n - 1) cur = math.derivative(cur, variable).toString();
+    }
+
+    var fc = function(v) { return parseFloat(v.toPrecision(6)).toString(); };
+    var termStrs = terms.map(function(t) {
+      var c = fc(t.coef);
+      if (c === '0') return '';
+      if (t.k === 0) return c;
+      var aoff = a === 0 ? variable : '(' + variable + (a > 0 ? '−' + a : '+' + Math.abs(a)) + ')';
+      var pow = t.k === 1 ? aoff : aoff + '^' + t.k;
+      return c + '·' + pow;
+    }).filter(Boolean);
+    var series = termStrs.join(' + ').replace(/\+ −/g, '− ').replace(/\+ -/g, '− ');
+    var name = a === 0 ? 'Maclaurin series' : 'Taylor series around ' + variable + ' = ' + a;
+
+    var tRows = terms.map(function(t) { return ['k = ' + t.k, 'f⁽ᵏ⁾(a) = ' + fc(t.fkA) + ', coef = ' + fc(t.coef), false]; });
+    body.innerHTML = '<div style="color:var(--fgm);font-size:12px;margin-bottom:8px">' + esc(name) + ' for ' + esc(expr) + '</div>'
+      + '<div class="rexpr" style="word-break:break-word;line-height:1.9">' + esc(series) + ' + O(' + variable + '^' + n + ')</div>'
+      + steps(tRows);
+  } catch(e) { showErr(body, e.message); }
+}
+
+document.getElementById('tyExpr').addEventListener('keydown', function(e) { if (e.key === 'Enter') doTaylor(); });
+
+// ── MATRICES ─────────────────────────────────────────────────
+function buildMat(id) {
+  var sz = parseInt(document.getElementById('ms' + id).value);
+  var g = document.getElementById('mg' + id);
+  g.style.gridTemplateColumns = 'repeat(' + sz + ', 58px)';
+  g.innerHTML = '';
+  for (var i = 0; i < sz; i++)
+    for (var j = 0; j < sz; j++) {
+      var inp = document.createElement('input');
+      inp.type = 'number'; inp.className = 'mcell';
+      inp.value = (id === 'A' && i === j) ? '1' : '0';
+      g.appendChild(inp);
+    }
+}
+
+function getMat(id) {
+  var sz = parseInt(document.getElementById('ms' + id).value);
+  var cells = document.getElementById('mg' + id).querySelectorAll('.mcell');
+  var d = [];
+  for (var i = 0; i < sz; i++) {
+    d.push([]);
+    for (var j = 0; j < sz; j++) d[i].push(parseFloat(cells[i*sz+j].value) || 0);
+  }
+  return d;
+}
+
+function fmtMat(m) {
+  var rows = Array.isArray(m[0]) ? m : (m._data || m);
+  var fv = function(v) {
+    if (typeof v !== 'number') return String(v);
+    if (Math.abs(v) < 1e-10) return '0';
+    return parseFloat(v.toPrecision(6)).toString();
+  };
+  return '<div style="overflow-x:auto;margin-top:8px"><table style="border-collapse:separate;border-spacing:4px;font-family:var(--fm);font-size:12.5px">'
+    + rows.map(function(row) {
+        return '<tr>' + row.map(function(v) {
+          return '<td style="background:var(--surf2);padding:5px 11px;border-radius:4px;text-align:right;color:var(--warm);font-variant-numeric:tabular-nums">' + fv(v) + '</td>';
+        }).join('') + '</tr>';
+      }).join('')
+    + '</table></div>';
+}
+
+function matRank(A) {
+  var m = A.map(function(r) { return r.slice(); }), rows = m.length, cols = m[0].length;
+  var rank = 0;
+  for (var col = 0; col < cols && rank < rows; col++) {
+    var piv = -1;
+    for (var row = rank; row < rows; row++) if (Math.abs(m[row][col]) > 1e-10) { piv = row; break; }
+    if (piv < 0) continue;
+    var tmp = m[rank]; m[rank] = m[piv]; m[piv] = tmp;
+    var sc = m[rank][col];
+    m[rank] = m[rank].map(function(v) { return v / sc; });
+    for (var row2 = 0; row2 < rows; row2++) if (row2 !== rank) {
+      var f = m[row2][col];
+      m[row2] = m[row2].map(function(v, j) { return v - f * m[rank][j]; });
+    }
+    rank++;
+  }
+  return rank;
+}
+
+function matOp(op) {
+  var panel = document.getElementById('mResult');
+  var body = document.getElementById('mResultBody');
+  panel.hidden = false;
+  try {
+    var A = getMat('A'), B = getMat('B');
+    if (op === 'det')        body.innerHTML = '<div class="rval">det(A) = ' + esc(fmtNum(math.det(A))) + '</div>';
+    else if (op === 'inv')   body.innerHTML = '<div style="color:var(--fgm);font-size:12px">A⁻¹ =</div>' + fmtMat(math.inv(A));
+    else if (op === 'trans') body.innerHTML = '<div style="color:var(--fgm);font-size:12px">Aᵀ =</div>' + fmtMat(math.transpose(A));
+    else if (op === 'mul')   body.innerHTML = '<div style="color:var(--fgm);font-size:12px">A×B =</div>' + fmtMat(math.multiply(A,B));
+    else if (op === 'add')   body.innerHTML = '<div style="color:var(--fgm);font-size:12px">A+B =</div>' + fmtMat(math.add(A,B));
+    else if (op === 'rank')  body.innerHTML = '<div class="rval">rank(A) = ' + matRank(A) + '</div>';
+    else if (op === 'trace') body.innerHTML = '<div class="rval">trace(A) = ' + esc(fmtNum(math.trace(A))) + '</div>';
+  } catch(e) { showErr(document.getElementById('mResultBody'), e.message); }
+}
+
+buildMat('A'); buildMat('B');
+
+// ── REFERENCE TABLE ──────────────────────────────────────────
+(function buildTrigTable() {
+  var data = [
+    [0,'0','0','1','0'],
+    [30,'π/6','1/2','√3/2','√3/3'],
+    [45,'π/4','√2/2','√2/2','1'],
+    [60,'π/3','√3/2','1/2','√3'],
+    [90,'π/2','1','0','—'],
+    [120,'2π/3','√3/2','-1/2','-√3'],
+    [135,'3π/4','√2/2','-√2/2','-1'],
+    [150,'5π/6','1/2','-√3/2','-√3/3'],
+    [180,'π','0','-1','0'],
+    [270,'3π/2','-1','0','—'],
+    [360,'2π','0','1','0'],
+  ];
+  document.getElementById('trigTbl').innerHTML = data.map(function(row) {
+    return '<tr><td class="ang">' + row[0] + '&deg;</td><td class="val">' + row[1] + '</td><td>' + row[2] + '</td><td>' + row[3] + '</td><td>' + row[4] + '</td></tr>';
+  }).join('');
+})();
+
+// ── UNIT CIRCLE ──────────────────────────────────────────────
+function buildUC() {
+  var svg = document.getElementById('ucSVG');
+  var isDark = document.documentElement.dataset.theme === 'dark' ||
+    (document.documentElement.dataset.theme !== 'light' &&
+     window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var fg  = isDark ? '#c9d1d9' : '#1f2328';
+  var fgm = isDark ? '#6e7681' : '#8c959f';
+  var acc = isDark ? '#388bfd' : '#0969da';
+  var bg  = isDark ? '#161b22' : '#ffffff';
+
+  var cx = 190, cy = 190, R = 130;
+
+  var pts = [
+    {l:'0',     x:1,                        y:0},
+    {l:'π/6',   x:Math.cos(Math.PI/6),      y:Math.sin(Math.PI/6)},
+    {l:'π/4',   x:Math.cos(Math.PI/4),      y:Math.sin(Math.PI/4)},
+    {l:'π/3',   x:Math.cos(Math.PI/3),      y:Math.sin(Math.PI/3)},
+    {l:'π/2',   x:0,                         y:1},
+    {l:'2π/3',  x:Math.cos(2*Math.PI/3),    y:Math.sin(2*Math.PI/3)},
+    {l:'3π/4',  x:Math.cos(3*Math.PI/4),    y:Math.sin(3*Math.PI/4)},
+    {l:'5π/6',  x:Math.cos(5*Math.PI/6),    y:Math.sin(5*Math.PI/6)},
+    {l:'π',     x:-1,                        y:0},
+    {l:'7π/6',  x:Math.cos(7*Math.PI/6),    y:Math.sin(7*Math.PI/6)},
+    {l:'5π/4',  x:Math.cos(5*Math.PI/4),    y:Math.sin(5*Math.PI/4)},
+    {l:'4π/3',  x:Math.cos(4*Math.PI/3),    y:Math.sin(4*Math.PI/3)},
+    {l:'3π/2',  x:0,                         y:-1},
+    {l:'5π/3',  x:Math.cos(5*Math.PI/3),    y:Math.sin(5*Math.PI/3)},
+    {l:'7π/4',  x:Math.cos(7*Math.PI/4),    y:Math.sin(7*Math.PI/4)},
+    {l:'11π/6', x:Math.cos(11*Math.PI/6),   y:Math.sin(11*Math.PI/6)},
+  ];
+
+  var h = '<rect width="380" height="380" fill="' + bg + '" rx="8"/>';
+  h += '<line x1="20" y1="' + cy + '" x2="358" y2="' + cy + '" stroke="' + fgm + '" stroke-width="1"/>';
+  h += '<line x1="' + cx + '" y1="358" x2="' + cx + '" y2="20" stroke="' + fgm + '" stroke-width="1"/>';
+  h += '<text x="362" y="' + (cy+4) + '" font-size="10" fill="' + fgm + '" font-family="monospace">x</text>';
+  h += '<text x="' + (cx+3) + '" y="17" font-size="10" fill="' + fgm + '" font-family="monospace">y</text>';
+  h += '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="none" stroke="' + acc + '" stroke-width="1.5" opacity="0.5"/>';
+
+  pts.forEach(function(p) {
+    var px = cx + p.x * R, py = cy - p.y * R;
+    h += '<line x1="' + cx + '" y1="' + cy + '" x2="' + px + '" y2="' + py + '" stroke="' + fgm + '" stroke-width="0.5" stroke-dasharray="2,3" opacity="0.35"/>';
+    h += '<circle cx="' + px + '" cy="' + py + '" r="3" fill="' + acc + '" opacity="0.9"/>';
+    var lr = R + 22;
+    var lx = cx + p.x * lr, ly = cy - p.y * lr;
+    h += '<text x="' + lx + '" y="' + ly + '" font-size="8.5" fill="' + fg + '" font-family="monospace" text-anchor="middle" dominant-baseline="middle">' + p.l + '</text>';
+  });
+
+  h += '<circle cx="' + cx + '" cy="' + cy + '" r="2.5" fill="' + fg + '"/>';
+  h += '<text x="' + (cx+4) + '" y="' + (cy+10) + '" font-size="9" fill="' + fgm + '" font-family="monospace">O</text>';
+  h += '<text x="' + (cx+R+2) + '" y="' + (cy-5) + '" font-size="9" fill="' + fgm + '" font-family="monospace">1</text>';
+  h += '<text x="' + (cx-R-13) + '" y="' + (cy-5) + '" font-size="9" fill="' + fgm + '" font-family="monospace">-1</text>';
+  h += '<text x="' + (cx+3) + '" y="' + (cy-R-3) + '" font-size="9" fill="' + fgm + '" font-family="monospace">1</text>';
+  h += '<text x="' + (cx+3) + '" y="' + (cy+R+10) + '" font-size="9" fill="' + fgm + '" font-family="monospace">-1</text>';
+
+  svg.innerHTML = h;
+}
+
+buildUC();
+doEval();
+</script>
+
+</body>
+</html>

@@ -142,6 +142,8 @@
   ::-webkit-scrollbar-track{background:transparent}
   ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
   :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  @keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  .integ-title{background:linear-gradient(90deg,var(--acc),var(--warm),#56d364,var(--acc));background-size:300% 300%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:gradShift 3s ease infinite}
   select.ifield{cursor:pointer}
   @media(max-width:600px){
     .refcols{grid-template-columns:1fr}
@@ -324,7 +326,7 @@
 
 <!-- INTEGRALS -->
 <section id="tab-integ" class="tc">
-  <div class="stitle">Numerical Integration</div>
+  <div class="stitle integ-title">Numerical Integration</div>
   <div class="sdesc">Definite integrals via adaptive Simpson&apos;s rule &mdash; accurate to ~8 significant figures.</div>
   <div class="ig">
     <label class="lbl" for="iExpr">Expression f(x)</label>
@@ -444,7 +446,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="ctitle">Derivative Rules bok</div>
+        <div class="ctitle">Osmanlı İmparatorluğu</div>
         <table class="rtable">
           <thead><tr><th>f(x)</th><th>f&prime;(x)</th></tr></thead>
           <tbody>
